@@ -1,7 +1,7 @@
 # inspired by https://github.com/hunkim/word-rnn-tensorflow
 
 import tensorflow as tf
-from tensorflow.python.ops import rnn_cell, seq2seq
+#from tensorflow.python.ops import rnn_cell, seq2seq
 import numpy as np
 
 import constants as c
@@ -45,8 +45,8 @@ class LSTMModel:
         # LSTM Cells
         ##
 
-        lstm_cell = rnn_cell.BasicLSTMCell(self.cell_size)
-        self.cell = rnn_cell.MultiRNNCell([lstm_cell] * self.num_layers)
+        lstm_cell = tf.contrib.rnn.BasicLSTMCell(self.cell_size)
+        self.cell = tf.contrib.rnn.MultiRNNCell([lstm_cell] * self.num_layers)
 
         ##
         # Data
@@ -71,7 +71,7 @@ class LSTMModel:
                 # The split splits this tensor into a seq_len long list of 3D tensors of shape
                 # [batch_size, 1, rnn_size]. The squeeze removes the 1 dimension from the 1st axis
                 # of each tensor
-                inputs_split = tf.split(1, self.seq_len, input_embeddings)
+                inputs_split = tf.split(input_embeddings, self.seq_len, 1)
                 inputs_split = [tf.squeeze(input_, [1]) for input_ in inputs_split]
 
 
@@ -100,7 +100,7 @@ class LSTMModel:
                                                                    self.cell,
                                                                    loop_function=loop if test else None,
                                                                    scope='lstm_vars')
-        lstm_outputs = tf.reshape(tf.concat(1, lstm_outputs_split), [-1, self.cell_size])
+        lstm_outputs = tf.reshape(tf.concat(lstm_outputs_split, 1), [-1, self.cell_size])
 
         # outputs looks like this:
         # [
@@ -138,7 +138,7 @@ class LSTMModel:
         # Train
         ##
 
-        total_loss = seq2seq.sequence_loss_by_example([logits],
+        total_loss = tf.contrib.legacy_seq2seq.sequence_loss_by_example([logits],
                                                       [tf.reshape(self.targets, [-1])],
                                                       [tf.ones([self.batch_size * self.seq_len])],
                                                       self.vocab_size)
